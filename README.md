@@ -14,9 +14,19 @@ on the terminal run :
 
 Download and install node.js - https://nodejs.org/en/download/
 
-cd signMe-Admin
+on the terminal run: 
 
-npm install
+    npm install nodemon
+
+    cd signMe-Admin
+
+    npm install
+    
+    nodemon index.js  - to start the server
+    
+    
+    
+  
 
 
 
