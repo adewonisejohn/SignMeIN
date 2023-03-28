@@ -11,11 +11,28 @@ import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:signmein/create.dart';
+import 'package:dio/dio.dart';
+import 'dart:convert';
+
+import 'main.dart';
+
 
 
 
 class register_face extends StatefulWidget {
-  const register_face({Key? key}) : super(key: key);
+  //const register_face({Key? key}) : super(key: key);
+
+  register_face({required this.full_name, required this.gender, required this.Phone_no, required this.email_address, required this.matric_no ,required this.level, required this.department,required this.server_address});
+
+  String full_name="";
+  String gender="";
+  String Phone_no="";
+  String email_address="";
+  String matric_no="";
+  String level="";
+  String department="";
+  String server_address="";
+
 
   @override
   State<register_face> createState() => _register_faceState();
@@ -25,8 +42,9 @@ class _register_faceState extends State<register_face> {
     bool is_camera=true;
 
     bool flash_on=false;
-
+    var address="";
     bool is_predicting = false;
+    bool connection_loading=false;
 
     var output ;
     late List<CameraDescription> cameras;
@@ -44,13 +62,23 @@ class _register_faceState extends State<register_face> {
         this._image_path=image.path;
         is_camera=false;
       });
+      Future.delayed(const Duration(milliseconds:1000), () {
+        setState(() {
+          //connection_loading=false;
+          print("aobut to scan student face ----------------------------------------");
+          register_student(this._image_path);
+          print('student face scannned ---------------------------------------------');
+        });
+
+      });
+
     }
 
     void startCamera() async {
       cameras = await availableCameras();
 
       cameraController = CameraController(
-          cameras[0],
+          cameras[1],
           ResolutionPreset.high,
           enableAudio:false
       );
@@ -78,22 +106,91 @@ class _register_faceState extends State<register_face> {
               this._image_path=file.path;
               is_camera=false;
             });
+            Future.delayed(const Duration(milliseconds:1000), () {
+              setState(() {
+                //connection_loading=false;
+                print("aobut to scan student face ----------------------------------------");
+                register_student(this._image_path);
+                print('student face scannned ---------------------------------------------');
+              });
+
+            });
           }
         }
       });
     }
 
+    void register_student(var image) async{
+      print(widget.full_name);
+      print(widget.matric_no);
+      print(widget.gender);
+      print(widget.level);
+      print(widget.department);
+      setState(() {
+        connection_loading=true;
+      });
 
-    Future<void> predict(var filepath) async{
-      print('about to be predicted');
+      try{
+        final formData = FormData.fromMap(
+            {
+              'full_name':widget.full_name,
+              'student_id' :widget.matric_no,
+              'gender': widget.gender,
+              'level': widget.level,
+              'department' : widget.department,
+              'image': await MultipartFile.fromFile(image,filename: 'current.jpg'),
+            }
+        );
+        var response = await Dio().post(
+          "http://$address/student/register",
+          data:formData,options: Options(
+          followRedirects: false,
+          contentType: Headers.formUrlEncodedContentType,
+          validateStatus: (status) { return status! < 500; },
+        ),
+        );
+        print(response);
+        var data=response.data;
+        if(data["status"]==true) {
+          setState(() {
+            connection_loading=false;
+          });
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) =>
+                MyHomePage(title: "SignMein", server_address: "")),
+          );
+        }else{
+          setState(() {
+            connection_loading=false;
+          });
+          showDialog(context: context, builder: (BuildContext context){
+            return AlertDialog(
+              content: Container(
+                height:MediaQuery.of(context).size.height*0.25,
+                width:MediaQuery.of(context).size.width*0.05,
+                child: Column(
+                  mainAxisAlignment:MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.error_outline_outlined,size:90,color:Colors.red),
+                    SizedBox(height:5,),
+                    Center(
+                      child: Text("Fill in the required data",style:GoogleFonts.montserrat(fontWeight:FontWeight.w600),)
+                    )
+                  ],
+                ),
+              ),
+            );
+          });
 
-      /* final image = img.decodeImage(File(filepath).readAsBytesSync());
-
-    final resizedImage = img.copyResize(image! , width:224, height:224);
-    File(filepath).writeAsBytesSync(img.encodePng(resizedImage));*/
+        }
 
 
+      }catch(e){
+        print("an error occured : ${e}");
+      }
     }
+
 
     @override
     void dispose(){
@@ -107,6 +204,7 @@ class _register_faceState extends State<register_face> {
     @override
     void initState(){
       startCamera();
+      address="${widget.server_address}";
       super.initState();
     }
 
@@ -138,17 +236,14 @@ class _register_faceState extends State<register_face> {
                         child:Image.file(_image,fit:BoxFit.fitHeight),
                       )
                   ),
-                  Align(
-                    alignment:Alignment.center,
-                    child:QRScannerOverlay(overlayColour:Color(0xfff4f4f4),),
-                  ),
 
-                  Align(
+
+                  /*Align(
                     alignment:Alignment.center,
                     child:Container(
                       margin:EdgeInsets.only(top:100),
                         child: Text("No face detected",style:GoogleFonts.montserrat(color:Colors.red,fontWeight:FontWeight.w500),)),
-                  ),
+                  ),*/
                   Align(
                     alignment:Alignment.bottomCenter,
                     child:Container(
@@ -169,12 +264,28 @@ class _register_faceState extends State<register_face> {
                             ),
                           ), onPressed: () {
                           print("about to do continue to next page");
-                          Navigator.push(
+                          /*Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const register_face()),
-                          );
+                            MaterialPageRoute(builder: (context) => register_face(full_name: this.full_name, gender: gender, Phone_no: Phone_no, email_address: email_address, matric_no: matric_no, level: level, department: department)),
+                          );*/
+                          //take_picture();
+                          getImage();
+                          //register_student();
                         },
-                          child:Text("Continue",style:GoogleFonts.montserrat(color:Color(0xFF252ab4),fontWeight:FontWeight.w700),),
+                          child:Row(
+                            mainAxisAlignment:MainAxisAlignment.center,
+                            children: [
+                              Text("Continue",style:GoogleFonts.montserrat(color:Color(0xFF252ab4),fontWeight:FontWeight.w700),),
+                              SizedBox(width:10,),
+                              connection_loading?Container(
+                                height:20,
+                                width:20,
+                                child: CircularProgressIndicator(
+                                  color:Color(0xFF252ab4)
+                                ),
+                              ):Container()
+                            ],
+                          ),
 
                         ),
 

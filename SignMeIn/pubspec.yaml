@@ -45,6 +45,9 @@ dependencies:
   loading_animation_widget: ^1.2.0+4
   http: ^0.13.5
   checkmark: ^0.0.2+1
+  firebase_core: ^2.8.0
+  dio: ^5.0.3
+  tflite: ^1.1.2
 
 dev_dependencies:
   flutter_test:

@@ -4,7 +4,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:signmein/register_face.dart';
 
 class create extends StatefulWidget {
-  const create({Key? key}) : super(key: key);
+
+  create({required this.server_address});
+
+  String server_address;
 
   @override
   State<create> createState() => _createState();
@@ -12,13 +15,28 @@ class create extends StatefulWidget {
 
 class _createState extends State<create> {
   String full_name="";
-  String gender="";
+  String gender="Gender";
   String Phone_no="";
   String email_address="";
   String matric_no="";
   String level="";
   String department="";
   String faculty="";
+
+
+
+
+  List<DropdownMenuItem<String>> get dropItems{
+    List<DropdownMenuItem<String>> menuItems = [
+      DropdownMenuItem(child: Text("Gender"),value: "Gender"),
+      DropdownMenuItem(child: Text("Male"),value: "Male"),
+      DropdownMenuItem(child: Text("Female"),value: "Female"),
+
+
+
+    ];
+    return menuItems;
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,6 +86,10 @@ class _createState extends State<create> {
                         keyboardType:TextInputType.name,
                         onChanged:(value){
                           print(value);
+                          setState(() {
+                            full_name=value;
+                          });
+
                         },
                       ),
                     ),
@@ -93,6 +115,9 @@ class _createState extends State<create> {
                         keyboardType:TextInputType.name,
                         onChanged:(value){
                           print(value);
+                          setState(() {
+                            matric_no=value;
+                          });
                         },
                       ),
                     ),
@@ -105,7 +130,7 @@ class _createState extends State<create> {
                       height:45,
                       width:MediaQuery.of(context).size.width*1,
                       margin:EdgeInsets.only(bottom:20,top:10),
-                      child: TextField(
+                      /*child: TextField(
                         decoration: InputDecoration(
                           border:OutlineInputBorder(
                             borderSide: BorderSide(width: 5, color: Colors.black),
@@ -118,8 +143,20 @@ class _createState extends State<create> {
                         keyboardType:TextInputType.name,
                         onChanged:(value){
                           print(value);
+                          setState(() {
+                            gender=value;
+                          });
                         },
-                      ),
+                      ),*/
+                      child:DropdownButton(
+                          value:gender,
+                          onChanged: (String? newValue){
+                            setState(() {
+                              gender = newValue!;
+                            });
+                          },
+                          items:dropItems
+                      )
                     ),
 
                     Align(
@@ -143,6 +180,10 @@ class _createState extends State<create> {
                         keyboardType:TextInputType.number,
                         onChanged:(value){
                           print(value);
+                          setState(() {
+                            level=value;
+
+                          });
                         },
                       ),
                     ),
@@ -168,6 +209,9 @@ class _createState extends State<create> {
                         keyboardType:TextInputType.text,
                         onChanged:(value){
                           print(value);
+                          setState(() {
+                            department=value;
+                          });
                         },
                       ),
                     ),
@@ -188,7 +232,7 @@ class _createState extends State<create> {
                         print("about to do continue to next page");
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const register_face()),
+                          MaterialPageRoute(builder: (context) =>  register_face(full_name: full_name, gender: gender, Phone_no: Phone_no, email_address: email_address, matric_no: matric_no, level: level, department: department,server_address:widget.server_address,)),
                         );
                       },
                         child:Text("Continue",style:GoogleFonts.montserrat(color:Colors.white,fontWeight:FontWeight.w700),),

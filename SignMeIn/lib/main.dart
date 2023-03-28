@@ -7,17 +7,31 @@ import 'package:signmein/over_lay.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:signmein/failed.dart';
 import 'package:image/image.dart' as img;
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:signmein/create.dart';
 import 'package:signmein/successful.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:dio/dio.dart';
+import 'package:tflite/tflite.dart';
+import 'dart:convert';
+import 'package:signmein/successful.dart';
+
+
+// ...
 
 
 
 
-void main() {
+
+Future<void> main() async {
+  /*await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );*/
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -31,16 +45,18 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner:false,
       title: 'SignMeIn',
-      home: const MyHomePage(title: 'SignMeIN'),
+      home: MyHomePage(title: 'SignMeIN',server_address:"",),
       //home:create()
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
 
-  final String title;
+  MyHomePage({required this.title,required this.server_address});
+
+  String title;
+  String server_address;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState();
@@ -54,6 +70,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   bool is_predicting = false;
 
+  bool error=false;
+
+
   var address="";
   var temp_address="";
 
@@ -66,6 +85,8 @@ class _MyHomePageState extends State<MyHomePage> {
   var _image;
   var _image_path;
 
+  var is_address_valid="false";
+
 
   Future getImage() async{
     final image = await ImagePicker().pickImage(source:ImageSource.gallery);
@@ -75,6 +96,8 @@ class _MyHomePageState extends State<MyHomePage> {
       this._image=imageTemporary;
       this._image_path=image.path;
       is_camera=false;
+      scan_student_face(this._image_path);
+
     });
   }
 
@@ -109,17 +132,56 @@ class _MyHomePageState extends State<MyHomePage> {
             this._image=imageTemporary;
             this._image_path=file.path;
             is_camera=false;
+            scan_student_face(this._image_path);
           });
-          Future.delayed(const Duration(milliseconds:900), () {
-            setState(() {
-              connection_loading=false;
-            });
 
-          });
         }
       }
     });
   }
+
+
+  void scan_student_face(var image) async{
+    try{
+      final formData = FormData.fromMap({
+        'image': await MultipartFile.fromFile(image,filename: 'current.jpg'),
+      });
+      var response = await Dio().post("http://$address/student/login",data:formData,options: Options(
+          followRedirects: false,
+        contentType: Headers.formUrlEncodedContentType,
+        validateStatus: (status) { return status! < 500; },
+      ),
+      );
+      var data=response.data;
+      if(data["status"]==true){
+        setState(() {
+          connection_loading=false;
+          print(data);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => successful(student_name:data["identity"][0]["full_name"])),
+          );
+        });
+      }else{
+        setState(() {
+          connection_loading=false;
+          print(data);
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) =>login_failed()),
+          );
+        });
+
+      }
+    }catch(e){
+      print("an error occured : ${e}");
+    }
+    /*var response = await Dio().get('http://172.20.10.4:300/student');
+    print(response.data.toString());*/
+
+  }
+
+
 
 
 
@@ -145,7 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
     if(cameraController.value.isInitialized){
 
       return Scaffold(
-          body:address==""?Dialog(
+          body:is_address_valid=="false"?Dialog(
             backgroundColor:Colors.white,
             child:Container(
               width:MediaQuery.of(context).size.width*0.5,
@@ -175,12 +237,20 @@ class _MyHomePageState extends State<MyHomePage> {
                       onChanged:(value){
                           print(value);
                           setState(() {
-                            temp_address+=value;
+                            address=value;
                           });
                       },
                     ),
                   ),
-                  SizedBox(height:50,),
+                  SizedBox(height:15,),
+                  error?Container(
+                      width:MediaQuery.of(context).size.width*0.5,color:Colors.white,
+                    height:MediaQuery.of(context).size.height*0.05,
+                    child:Center(
+                      child:Text("Invalid address",style:GoogleFonts.montserrat(color:Colors.red),),
+                    ),
+                  ):Container(),
+                  SizedBox(height:15,),
                   Center(
                     child:TextButton(
                       style:TextButton.styleFrom(
@@ -193,18 +263,32 @@ class _MyHomePageState extends State<MyHomePage> {
                             borderRadius: BorderRadius.circular(10),
                             side: BorderSide(color: Color(0xFF252ab4), width: 1)
                         ),
-                      ), onPressed: () {
-                        if(temp_address.length>1){
+                      ), onPressed: () async {
+                        if(address.length>1){
                           setState(() {
                             connection_loading=true;
-                            address=temp_address;
-                            connection_loading=false;
-
+                            address=address+":6000";
                           });
-                        }
+                          try{
+                            final dio = Dio();
 
-                      print("about to do something");
-                    },
+                            final response = await dio.get("http://$address");
+                            print(response);
+                            print("server is working fine--------------------------");
+                            setState(() {
+                              is_address_valid="true";
+                              connection_loading=false;
+                              error=false;
+                            });
+                          }catch(e){
+                            setState(() {
+                              is_address_valid="false";
+                              error=true;
+                              connection_loading=false;
+                            });
+                          }
+                        }
+                        },
                       child:Row(
                         mainAxisAlignment:MainAxisAlignment.center,
                         children: [
@@ -238,17 +322,14 @@ class _MyHomePageState extends State<MyHomePage> {
                       child:Image.file(_image,fit:BoxFit.fitHeight),
                     )
                 ),
-                Align(
-                  alignment:Alignment.center,
-                  child:QRScannerOverlay(overlayColour:Color(0xfff4f4f4),),
-                ),
-                Container(
+
+                /*Container(
                   margin:EdgeInsets.only(top:MediaQuery.of(context).size.height*0.2),
                   child: Align(
                     alignment:Alignment.center,
                     child:Text("Position your face at the center of the ractangle",style:GoogleFonts.montserrat(color:Colors.black,fontSize:13,fontWeight:FontWeight.w600,letterSpacing: 0.1,height: 0.9),),
                   ),
-                ),
+                ),*/
                 Align(
                   alignment:Alignment.bottomCenter,
                   child:Container(
@@ -274,11 +355,13 @@ class _MyHomePageState extends State<MyHomePage> {
                             setState(() {
                               connection_loading=true;
                             });
-                            take_picture();
-                            Navigator.pushReplacement(
+                            //take_picture();
+                            getImage();
+                            //scan_student_face(_image_path);
+                            /*Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(builder: (context) => const successful()),
-                            );
+                            );*/
                           },
                             child:Row(
                               mainAxisAlignment:MainAxisAlignment.center,
@@ -315,7 +398,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             take_picture();
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (context) => const create()),
+                              MaterialPageRoute(builder: (context) => create(server_address:address)),
                             );
                           },
                             child:Text("Register",style:GoogleFonts.montserrat(color:Color(0xFF252ab4),fontWeight:FontWeight.w700),),

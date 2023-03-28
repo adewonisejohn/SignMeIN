@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "747232972220",
+    "project_id": "signmein-5e54f",
+    "storage_bucket": "signmein-5e54f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:747232972220:android:e1ad516aaaf08feb6b2fb9",
+        "android_client_info": {
+          "package_name": "com.signmein.signmein"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "747232972220-qc6bh1ivn01dfhojhgvfcrcvch2n3hfc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjOqV0YNT3Mbj84zPyQHlxb746asmLYZI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "747232972220-qc6bh1ivn01dfhojhgvfcrcvch2n3hfc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
