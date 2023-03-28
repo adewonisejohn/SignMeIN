@@ -26,10 +26,13 @@ on the terminal run:
     
 
 After starting the server to get the address
+
 on Linux run:
+
     ifconfig
     
 on Windows run:
+
     ipconfig
 
 
