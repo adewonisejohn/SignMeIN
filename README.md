@@ -24,11 +24,15 @@ on the terminal run:
     
     nodemon index.js  - to start the server
     
-    
-    
-  
 
+After starting the server to get the address
+on Linux run:
+    ifconfig
+    
+    ![Screenshot from 2023-03-28 18-18-31](https://user-images.githubusercontent.com/38571009/228318420-2e97d783-a353-4d66-9a81-526cd52a29dd.png)
 
+on Windows run:
+    ipconfig
 
 
 
