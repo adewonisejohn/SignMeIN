@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 class QRScannerOverlay extends StatelessWidget {
-  const QRScannerOverlay({Key? key, required this.overlayColour})
+  const QRScannerOverlay({Key? key, required this.overlayColour, required this.face_detected})
       : super(key: key);
 
   final Color overlayColour;
+  final face_detected;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +45,7 @@ class QRScannerOverlay extends StatelessWidget {
         child: Container(
           margin:EdgeInsets.only(top:MediaQuery.of(context).size.height*0.15),
           child: CustomPaint(
-            foregroundPainter: BorderPainter(),
+            foregroundPainter: BorderPainter(detected:this.face_detected),
             child: SizedBox(
               width: scanArea + 25,
               height: scanArea + 25,
@@ -58,6 +59,9 @@ class QRScannerOverlay extends StatelessWidget {
 
 // Creates the white borders
 class BorderPainter extends CustomPainter {
+  BorderPainter({required this.detected});
+
+  final detected;
   @override
   void paint(Canvas canvas, Size size) {
     const width = 4.0;
@@ -105,7 +109,7 @@ class BorderPainter extends CustomPainter {
     canvas.drawRRect(
       rrect,
       Paint()
-        ..color = Color(0xFF252ab4)
+        ..color = this.detected?Color(0xFF252ab4):Colors.red
         ..style = PaintingStyle.stroke
         ..strokeWidth = width,
     );

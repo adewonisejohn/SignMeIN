@@ -10,6 +10,7 @@ import 'package:image/image.dart' as img;
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_ml_vision/google_ml_vision.dart';
 import 'package:signmein/create.dart';
 import 'package:dio/dio.dart';
 import 'dart:convert';
@@ -49,6 +50,8 @@ class _register_faceState extends State<register_face> {
     var output ;
     late List<CameraDescription> cameras;
     late CameraController cameraController;
+
+    var face_detected=true;
 
     var _image;
     var _image_path;
@@ -96,7 +99,10 @@ class _register_faceState extends State<register_face> {
     }
 
     void take_picture() async{
-      cameraController.takePicture().then((XFile? file){
+      setState(() {
+        connection_loading=true;
+      });
+      cameraController.takePicture().then((XFile? file) async {
         if(mounted){
           if(file !=null ){
             print("picture saved to ${file.path}");
@@ -104,17 +110,27 @@ class _register_faceState extends State<register_face> {
             setState(() {
               this._image=imageTemporary;
               this._image_path=file.path;
-              is_camera=false;
             });
-            Future.delayed(const Duration(milliseconds:1000), () {
+            final scanned_image = GoogleVisionImage.fromFile(File(_image_path));
+            final face_detector = GoogleVision.instance.faceDetector();
+            List<Face> faces = await face_detector.processImage(scanned_image);
+            if(faces.isNotEmpty){
               setState(() {
-                //connection_loading=false;
-                print("aobut to scan student face ----------------------------------------");
+                face_detected=true;
                 register_student(this._image_path);
-                print('student face scannned ---------------------------------------------');
+                connection_loading=false;
               });
+              print("face is detected in the image");
+            }else{
+              setState(() {
+                connection_loading=false;
+                face_detected=false;
+                is_camera=true;
+              });
+              print("face not detected");
+            }
+            print("-------------------------------------------------------------------------");
 
-            });
           }
         }
       });
@@ -160,6 +176,13 @@ class _register_faceState extends State<register_face> {
             MaterialPageRoute(builder: (context) =>
                 MyHomePage(title: "SignMein", server_address: "")),
           );
+        }else if (data["status"]==false && data["message"]=="face not detected"){
+          setState(() {
+            connection_loading=false;
+            face_detected=false;
+            is_camera=true;
+          });
+
         }else{
           setState(() {
             connection_loading=false;
@@ -175,14 +198,13 @@ class _register_faceState extends State<register_face> {
                     Icon(Icons.error_outline_outlined,size:90,color:Colors.red),
                     SizedBox(height:5,),
                     Center(
-                      child: Text("Fill in the required data",style:GoogleFonts.montserrat(fontWeight:FontWeight.w600),)
+                        child: Text("Fill in the required data",style:GoogleFonts.montserrat(fontWeight:FontWeight.w600),)
                     )
                   ],
                 ),
               ),
             );
           });
-
         }
 
 
@@ -237,13 +259,16 @@ class _register_faceState extends State<register_face> {
                       )
                   ),
 
-
-                  /*Align(
+                  Align(
+                    alignment:Alignment.center,
+                    child:QRScannerOverlay(overlayColour:Colors.black.withOpacity(0.5), face_detected:face_detected,),
+                  ),
+                  face_detected==false?Align(
                     alignment:Alignment.center,
                     child:Container(
                       margin:EdgeInsets.only(top:100),
-                        child: Text("No face detected",style:GoogleFonts.montserrat(color:Colors.red,fontWeight:FontWeight.w500),)),
-                  ),*/
+                        child: Text("No face detected",style:GoogleFonts.montserrat(color:Colors.white,fontWeight:FontWeight.w500),)),
+                  ):Container(),
                   Align(
                     alignment:Alignment.bottomCenter,
                     child:Container(
@@ -268,8 +293,8 @@ class _register_faceState extends State<register_face> {
                             context,
                             MaterialPageRoute(builder: (context) => register_face(full_name: this.full_name, gender: gender, Phone_no: Phone_no, email_address: email_address, matric_no: matric_no, level: level, department: department)),
                           );*/
-                          //take_picture();
-                          getImage();
+                          take_picture();
+                          //getImage();
                           //register_student();
                         },
                           child:Row(

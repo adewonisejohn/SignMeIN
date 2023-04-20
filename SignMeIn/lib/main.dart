@@ -17,9 +17,12 @@ import 'package:signmein/successful.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:dio/dio.dart';
-import 'package:tflite/tflite.dart';
 import 'dart:convert';
+import 'package:localstorage/localstorage.dart';
+
 import 'package:signmein/successful.dart';
+import 'package:google_ml_vision/google_ml_vision.dart';
+import 'dart:ui' as ui;
 
 
 // ...
@@ -29,9 +32,6 @@ import 'package:signmein/successful.dart';
 
 
 Future<void> main() async {
-  /*await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );*/
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
@@ -71,10 +71,34 @@ class _MyHomePageState extends State<MyHomePage> {
   bool is_predicting = false;
 
   bool error=false;
+  bool face_detected=true;
 
 
   var address="";
   var temp_address="";
+
+  Future<void> save_address(String adress) async {
+    final LocalStorage storage = new LocalStorage("sign-in");
+    await storage.ready;
+
+    storage.setItem("address",address);
+    final attendace_address=storage.getItem("address");
+    print("saved attendance address is ${attendace_address}");
+  }
+
+  Future<String> get_address() async {
+    final LocalStorage storage = new LocalStorage("sign-in");
+    await storage.ready;
+    
+    
+    final attendace_address=storage.getItem("address");
+    print(attendace_address);
+
+    return attendace_address;
+
+  }
+
+
 
   bool connection_loading =false;
 
@@ -96,9 +120,29 @@ class _MyHomePageState extends State<MyHomePage> {
       this._image=imageTemporary;
       this._image_path=image.path;
       is_camera=false;
-      scan_student_face(this._image_path);
+
+      //
 
     });
+    print("about to scan face --------------------------------------------");
+    final scanned_image = GoogleVisionImage.fromFile(File(image.path));
+    final face_detector = GoogleVision.instance.faceDetector();
+    List<Face> faces = await face_detector.processImage(scanned_image);
+    if(faces.isNotEmpty){
+      setState(() {
+        face_detected=true;
+        scan_student_face(this._image_path);
+      });
+      print("face is detected in the image");
+    }else{
+      setState(() {
+        connection_loading=false;
+        face_detected=false;
+      });
+      print("face not detected");
+    }
+    print("-------------------------------------------------------------------------");
+
   }
 
   void startCamera() async {
@@ -107,6 +151,7 @@ class _MyHomePageState extends State<MyHomePage> {
     cameraController = CameraController(
         cameras[1],
         ResolutionPreset.high,
+        imageFormatGroup:ImageFormatGroup.jpeg,
         enableAudio:false
     );
 
@@ -123,7 +168,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void take_picture() async{
-    cameraController.takePicture().then((XFile? file){
+    cameraController.takePicture().then((XFile? file) async {
       if(mounted){
         if(file !=null ){
           print("picture saved to ${file.path}");
@@ -131,9 +176,27 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             this._image=imageTemporary;
             this._image_path=file.path;
-            is_camera=false;
-            scan_student_face(this._image_path);
           });
+          print("about to scan face --------------------------------------------");
+          final scanned_image = GoogleVisionImage.fromFile(File(_image_path));
+          final face_detector = GoogleVision.instance.faceDetector();
+          List<Face> faces = await face_detector.processImage(scanned_image);
+          if(faces.isNotEmpty){
+            setState(() {
+              face_detected=true;
+              scan_student_face(this._image_path);
+              is_camera=false;
+            });
+            print("face is detected in the image");
+          }else{
+            setState(() {
+              connection_loading=false;
+              face_detected=false;
+              is_camera=true;
+            });
+            print("face not detected");
+          }
+          print("-------------------------------------------------------------------------");
 
         }
       }
@@ -144,7 +207,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void scan_student_face(var image) async{
     try{
       final formData = FormData.fromMap({
-        'image': await MultipartFile.fromFile(image,filename: 'current.jpg'),
+        'image': await MultipartFile.fromFile(image,filename: 'current.jpeg'),
       });
       var response = await Dio().post("http://$address/student/login",data:formData,options: Options(
           followRedirects: false,
@@ -162,23 +225,72 @@ class _MyHomePageState extends State<MyHomePage> {
             MaterialPageRoute(builder: (context) => successful(student_name:data["identity"][0]["full_name"])),
           );
         });
+      }else if(data["status"]==false && data["message"]=="Face not detected"){
+        setState(() {
+          connection_loading=false;
+          face_detected=false;
+          is_camera=true;
+        });
+
       }else{
         setState(() {
           connection_loading=false;
           print(data);
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) =>login_failed()),
+            MaterialPageRoute(builder: (context) =>login_failed(address:widget.server_address,message:data["message"],)),
           );
         });
-
       }
     }catch(e){
       print("an error occured : ${e}");
     }
-    /*var response = await Dio().get('http://172.20.10.4:300/student');
-    print(response.data.toString());*/
 
+  }
+
+  void check_server()async{
+    is_address_valid="false";
+    try{
+      final dio = Dio();
+
+      var address = await get_address();
+      print("gottena addres from check server is : $address");
+      final response = await dio.get("http://$address");
+      print(response);
+      print("server is working fine--------------------------");
+      setState(() {
+        is_address_valid="true";
+        connection_loading=false;
+        error=false;
+      });
+      save_address(address);
+      var gotten_adress=await get_address();
+      print("gotten address from local storage is ${gotten_adress.toString()}");
+    }catch(e){
+      setState(() {
+        is_address_valid="false";
+        error=true;
+        connection_loading=false;
+      });
+    }
+  }
+
+
+
+  Future<void> init_firebase() async {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  }
+
+  Future<void> check_storage() async {
+    var data = await get_address();
+    if(data!=null && data !=""){
+      setState(() {
+        address=data;
+        is_address_valid="true";
+      });
+    }
   }
 
 
@@ -197,6 +309,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState(){
+    check_storage();
+    check_server();
+    init_firebase();
     startCamera();
     super.initState();
   }
@@ -280,6 +395,9 @@ class _MyHomePageState extends State<MyHomePage> {
                               connection_loading=false;
                               error=false;
                             });
+                            save_address(address);
+                            var gotten_adress=await get_address();
+                            print("gotten address from local storage is ${gotten_adress.toString()}");
                           }catch(e){
                             setState(() {
                               is_address_valid="false";
@@ -322,14 +440,18 @@ class _MyHomePageState extends State<MyHomePage> {
                       child:Image.file(_image,fit:BoxFit.fitHeight),
                     )
                 ),
+                Align(
+                  alignment:Alignment.center,
+                  child:QRScannerOverlay(overlayColour:Colors.black.withOpacity(0.5), face_detected:face_detected,),
+                ),
 
-                /*Container(
+                face_detected==false?Container(
                   margin:EdgeInsets.only(top:MediaQuery.of(context).size.height*0.2),
                   child: Align(
                     alignment:Alignment.center,
-                    child:Text("Position your face at the center of the ractangle",style:GoogleFonts.montserrat(color:Colors.black,fontSize:13,fontWeight:FontWeight.w600,letterSpacing: 0.1,height: 0.9),),
+                    child:Text("Face not detected",style:GoogleFonts.montserrat(color:Colors.white,fontSize:13,fontWeight:FontWeight.w600,letterSpacing: 0.1,height: 0.9),),
                   ),
-                ),*/
+                ):Container(),
                 Align(
                   alignment:Alignment.bottomCenter,
                   child:Container(
@@ -355,8 +477,8 @@ class _MyHomePageState extends State<MyHomePage> {
                             setState(() {
                               connection_loading=true;
                             });
-                            //take_picture();
-                            getImage();
+                            take_picture();
+                            //getImage();
                             //scan_student_face(_image_path);
                             /*Navigator.pushReplacement(
                               context,
@@ -395,7 +517,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ),
                             ), onPressed: () {
                             print("about to sign up");
-                            take_picture();
+                            //take_picture();
                             Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => create(server_address:address)),

@@ -41,17 +41,23 @@ dependencies:
   image_picker: ^0.8.6
   path_provider: ^2.0.11
   modal_bottom_sheet: ^2.1.2
-  flutter_launcher_icons: ^0.11.0
   loading_animation_widget: ^1.2.0+4
   http: ^0.13.5
   checkmark: ^0.0.2+1
   firebase_core: ^2.8.0
   dio: ^5.0.3
-  tflite: ^1.1.2
+  google_ml_vision: ^0.0.8
+  localstorage: ^4.0.1+2
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/logo.png"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

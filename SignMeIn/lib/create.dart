@@ -96,7 +96,7 @@ class _createState extends State<create> {
 
                     Align(
                       alignment:Alignment.topLeft,
-                      child:Text("Matric Number :",style:GoogleFonts.montserrat(color:Colors.black,fontWeight:FontWeight.w500,fontSize:17),),
+                      child:Text("Student Id :",style:GoogleFonts.montserrat(color:Colors.black,fontWeight:FontWeight.w500,fontSize:17),),
                     ),
                     Container(
                       height:45,
@@ -110,7 +110,7 @@ class _createState extends State<create> {
                           focusedBorder: OutlineInputBorder(
                             borderSide: BorderSide(width: 3, color: Colors.black12),
                           ),
-                          hintText: 'Matric Number',
+                          hintText: 'Student Id',
                         ),
                         keyboardType:TextInputType.name,
                         onChanged:(value){

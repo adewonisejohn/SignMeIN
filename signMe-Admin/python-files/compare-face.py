@@ -13,8 +13,10 @@ student_face = face_recognition.load_image_file("./images/current_image.jpeg")
 unknown_face = face_recognition.load_image_file("./database/"+input)
 
 
-
-student_face_encoding = face_recognition.face_encodings(student_face)[0]
+try:
+    student_face_encoding = face_recognition.face_encodings(student_face)[0]
+except IndexError:
+    print(str(2))
 unkown_encoding = face_recognition.face_encodings(unknown_face)[0]
 
 results = face_recognition.compare_faces([student_face_encoding],unkown_encoding)

@@ -29,6 +29,13 @@
             {
               "client_id": "747232972220-qc6bh1ivn01dfhojhgvfcrcvch2n3hfc.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "747232972220-ibmmhh5fu0bvt3folu69896fml25sv6a.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.signmein.signmein"
+              }
             }
           ]
         }

@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:signmein/main.dart';
 
 class login_failed extends StatefulWidget {
-  const login_failed({Key? key}) : super(key: key);
+  login_failed({required this.address, required this.message});
+
+  var address;
+  String message;
 
   @override
   State<login_failed> createState() => _login_failedState();
@@ -25,7 +28,7 @@ class _login_failedState extends State<login_failed> {
                 child:Icon(Icons.error_rounded,color:Colors.red,size:150)
             ),
             SizedBox(height:14,),
-            Text('STUDENT NOT FOUND',style:GoogleFonts.montserrat(fontSize:20,fontWeight:FontWeight.w500),textAlign:TextAlign.center,),
+            Text('${widget.message.toUpperCase()}',style:GoogleFonts.montserrat(fontSize:20,fontWeight:FontWeight.w500),textAlign:TextAlign.center,),
             SizedBox(height:5,),
             Center(
               child:TextButton(
@@ -42,7 +45,7 @@ class _login_failedState extends State<login_failed> {
                 ), onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) =>MyHomePage(title: "SignMein", server_address:"")),
+                  MaterialPageRoute(builder: (context) =>MyHomePage(title: "SignMein", server_address:widget.address)),
                 );
               },
                 child:Row(
