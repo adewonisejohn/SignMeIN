@@ -55,8 +55,12 @@ class _register_faceState extends State<register_face> {
 
     var _image;
     var _image_path;
+    bool is_gallary=false;
 
     Future getImage() async{
+      setState(() {
+        connection_loading=true;
+      });
       final image = await ImagePicker().pickImage(source:ImageSource.gallery);
       if(image==null) return;
       final imageTemporary = File(image.path);
@@ -65,16 +69,25 @@ class _register_faceState extends State<register_face> {
         this._image_path=image.path;
         is_camera=false;
       });
-      Future.delayed(const Duration(milliseconds:1000), () {
+      final scanned_image = GoogleVisionImage.fromFile(File(_image_path));
+      final face_detector = GoogleVision.instance.faceDetector();
+      List<Face> faces = await face_detector.processImage(scanned_image);
+      if(faces.isNotEmpty){
         setState(() {
-          //connection_loading=false;
-          print("aobut to scan student face ----------------------------------------");
+          face_detected=true;
           register_student(this._image_path);
-          print('student face scannned ---------------------------------------------');
+          connection_loading=false;
         });
-
-      });
-
+        print("face is detected in the image");
+      }else{
+        setState(() {
+          connection_loading=false;
+          face_detected=false;
+          is_camera=true;
+        });
+        print("face not detected");
+      }
+      print("-------------------------------------------------------------------------");
     }
 
     void startCamera() async {
@@ -263,6 +276,29 @@ class _register_faceState extends State<register_face> {
                     alignment:Alignment.center,
                     child:QRScannerOverlay(overlayColour:Colors.black.withOpacity(0.5), face_detected:face_detected,),
                   ),
+                  Align(
+                    alignment:Alignment.topRight,
+                    child: Container(
+                        margin:EdgeInsets.only(top:MediaQuery.of(context).size.height*0.07,right:28),
+                        child:CircleAvatar(
+                          radius:25,
+                          backgroundColor:Colors.blueAccent,
+                          child: Center(
+                            child: Switch(
+                              activeColor:Colors.white,
+                              value:is_gallary,
+                              onChanged:(value){
+                                print(value);
+                                setState(() {
+                                  is_gallary=value;
+                                });
+                              },
+                            ),
+                          ),
+                        )
+                    ),
+                  ),
+
                   face_detected==false?Align(
                     alignment:Alignment.center,
                     child:Container(
@@ -293,7 +329,11 @@ class _register_faceState extends State<register_face> {
                             context,
                             MaterialPageRoute(builder: (context) => register_face(full_name: this.full_name, gender: gender, Phone_no: Phone_no, email_address: email_address, matric_no: matric_no, level: level, department: department)),
                           );*/
-                          take_picture();
+                          if(is_gallary==false){
+                            take_picture();
+                          }else{
+                            getImage();
+                          }
                           //getImage();
                           //register_student();
                         },

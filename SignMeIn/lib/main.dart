@@ -76,6 +76,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   var address="";
   var temp_address="";
+  bool is_gallary=false;
 
   Future<void> save_address(String adress) async {
     final LocalStorage storage = new LocalStorage("sign-in");
@@ -309,10 +310,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState(){
+    startCamera();
     check_storage();
     check_server();
     init_firebase();
-    startCamera();
     super.initState();
   }
 
@@ -440,6 +441,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       child:Image.file(_image,fit:BoxFit.fitHeight),
                     )
                 ),
+
                 Align(
                   alignment:Alignment.center,
                   child:QRScannerOverlay(overlayColour:Colors.black.withOpacity(0.5), face_detected:face_detected,),
@@ -452,6 +454,28 @@ class _MyHomePageState extends State<MyHomePage> {
                     child:Text("Face not detected",style:GoogleFonts.montserrat(color:Colors.white,fontSize:13,fontWeight:FontWeight.w600,letterSpacing: 0.1,height: 0.9),),
                   ),
                 ):Container(),
+                Align(
+                  alignment:Alignment.topRight,
+                  child: Container(
+                    margin:EdgeInsets.only(top:MediaQuery.of(context).size.height*0.07,right:28),
+                    child:CircleAvatar(
+                      radius:25,
+                      backgroundColor:Colors.blueAccent,
+                      child: Center(
+                        child: Switch(
+                          activeColor:Colors.white,
+                          value:is_gallary,
+                          onChanged:(value){
+                            print(value);
+                            setState(() {
+                              is_gallary=value;
+                            });
+                          },
+                        ),
+                      ),
+                    )
+                  ),
+                ),
                 Align(
                   alignment:Alignment.bottomCenter,
                   child:Container(
@@ -477,7 +501,11 @@ class _MyHomePageState extends State<MyHomePage> {
                             setState(() {
                               connection_loading=true;
                             });
-                            take_picture();
+                            if(is_gallary==false){
+                              take_picture();
+                            }else{
+                              getImage();
+                            }
                             //getImage();
                             //scan_student_face(_image_path);
                             /*Navigator.pushReplacement(
